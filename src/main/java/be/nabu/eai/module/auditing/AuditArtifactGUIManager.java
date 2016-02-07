@@ -27,7 +27,7 @@ public class AuditArtifactGUIManager extends BaseJAXBGUIManager<AuditConfigurati
 
 	@Override
 	public String getCategory() {
-		return "Auditing";
+		return "Miscellaneous";
 	}
 	
 }

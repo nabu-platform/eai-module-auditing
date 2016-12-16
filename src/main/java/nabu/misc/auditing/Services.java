@@ -1,6 +1,7 @@
 package nabu.misc.auditing;
 
 import javax.jws.WebParam;
+import javax.jws.WebService;
 
 import be.nabu.eai.module.auditing.FlatServiceTrackerWrapper;
 import be.nabu.eai.module.auditing.api.FlatServiceTracker.TrackType;
@@ -9,6 +10,7 @@ import be.nabu.libs.services.ServiceRuntime;
 import be.nabu.libs.services.api.DefinedService;
 import be.nabu.libs.services.api.ExecutionContext;
 
+@WebService
 public class Services {
 	
 	private ExecutionContext executionContext;

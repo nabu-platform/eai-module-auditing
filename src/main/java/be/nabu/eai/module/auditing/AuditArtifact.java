@@ -21,31 +21,33 @@ public class AuditArtifact extends JAXBArtifact<AuditConfiguration> implements S
 
 	@Override
 	public ServiceRuntimeTracker getTracker(ServiceRuntime runtime) {
-		try {
-			boolean track = getConfiguration().getServicesToAudit().contains(runtime.getService());
-			// if we want to track recursively
-			if (!track && getConfiguration().getRecursive() != null && getConfiguration().getRecursive()) {
-				ServiceRuntime runtimeToCheck = runtime.getParent();
-				while (runtimeToCheck != null) {
-					if (getConfiguration().getServicesToAudit().contains(runtime.getParent().getService())) {
-						track = true;
-						break;
+		if (getConfig().getServicesToAudit() != null && getConfig().getServicesToAudit().isEmpty()) {
+			try {
+				boolean track = getConfiguration().getServicesToAudit().contains(runtime.getService());
+				// if we want to track recursively
+				if (!track && getConfiguration().getRecursive() != null && getConfiguration().getRecursive()) {
+					ServiceRuntime runtimeToCheck = runtime.getParent();
+					while (runtimeToCheck != null) {
+						if (getConfiguration().getServicesToAudit().contains(runtime.getParent().getService())) {
+							track = true;
+							break;
+						}
+						runtimeToCheck = runtimeToCheck.getParent();
 					}
-					runtimeToCheck = runtimeToCheck.getParent();
+				}
+				if (track) {
+					FlatServiceTrackerWrapper tracker = (FlatServiceTrackerWrapper) runtime.getContext().get("audit:" + getId());
+					if (tracker == null) {
+						tracker = new FlatServiceTrackerWrapper(getConfiguration().getAuditingService(), runtime.getExecutionContext());
+						tracker.setType(getConfig().getTrackType() == null ? TrackType.SERVICE : getConfig().getTrackType());
+						runtime.getContext().put("audit:" + getId(), tracker);
+					}
+					return tracker;
 				}
 			}
-			if (track) {
-				FlatServiceTrackerWrapper tracker = (FlatServiceTrackerWrapper) runtime.getContext().get("audit:" + getId());
-				if (tracker == null) {
-					tracker = new FlatServiceTrackerWrapper(getConfiguration().getAuditingService(), runtime.getExecutionContext());
-					tracker.setType(getConfig().getTrackType() == null ? TrackType.SERVICE : getConfig().getTrackType());
-					runtime.getContext().put("audit:" + getId(), tracker);
-				}
-				return tracker;
+			catch (Exception e) {
+				logger.error("Could not load auditing", e);
 			}
-		}
-		catch (Exception e) {
-			logger.error("Could not load auditing", e);
 		}
 		return null;
 	}

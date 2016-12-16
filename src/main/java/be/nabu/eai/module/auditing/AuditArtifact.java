@@ -3,9 +3,9 @@ package be.nabu.eai.module.auditing;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import be.nabu.eai.module.auditing.api.FlatServiceTracker.TrackType;
 import be.nabu.eai.repository.api.Repository;
 import be.nabu.eai.repository.artifacts.jaxb.JAXBArtifact;
-import be.nabu.eai.repository.util.FlatServiceTrackerWrapper;
 import be.nabu.libs.resources.api.ResourceContainer;
 import be.nabu.libs.services.ServiceRuntime;
 import be.nabu.libs.services.api.ServiceRuntimeTracker;
@@ -38,7 +38,7 @@ public class AuditArtifact extends JAXBArtifact<AuditConfiguration> implements S
 				FlatServiceTrackerWrapper tracker = (FlatServiceTrackerWrapper) runtime.getContext().get("audit:" + getId());
 				if (tracker == null) {
 					tracker = new FlatServiceTrackerWrapper(getConfiguration().getAuditingService(), runtime.getExecutionContext());
-					tracker.setServicesOnly(getConfiguration().getServicesOnly() != null && getConfiguration().getServicesOnly());
+					tracker.setType(getConfig().getTrackType() == null ? TrackType.SERVICE : getConfig().getTrackType());
 					runtime.getContext().put("audit:" + getId(), tracker);
 				}
 				return tracker;

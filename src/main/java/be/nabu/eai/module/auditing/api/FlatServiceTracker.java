@@ -13,7 +13,7 @@ public interface FlatServiceTracker {
 		// the id of the entire run (root id)
 		@NotNull @WebParam(name = "runId") UUID id,
 		// the type of the track entry
-		@WebParam(name = "type") TrackType trackType,
+		@NotNull @WebParam(name = "type") TrackType trackType,
 		// the id of this service instance
 		@NotNull @WebParam(name = "instanceId") UUID instanceId,
 		// the id of the parent service instance

@@ -24,6 +24,7 @@ public class FlatServiceTrackerWrapper implements ServiceRuntimeTracker {
 	private Stack<UUID> stepInstanceIds = new Stack<UUID>();
 	private Stack<Date> started = new Stack<Date>();
 	private TrackType type;
+	private boolean stopOnly;
 	
 	public FlatServiceTrackerWrapper(Service service, ExecutionContext context) {
 		// force an empty tracker to prevent recursive tracker calls
@@ -36,7 +37,7 @@ public class FlatServiceTrackerWrapper implements ServiceRuntimeTracker {
 	
 	@Override
 	public void start(Service service) {
-		if (type == TrackType.SERVICE || type == TrackType.BOTH) {
+		if (!stopOnly && (type == TrackType.SERVICE || type == TrackType.BOTH)) {
 			service = ServiceUtils.unwrap(service);
 			if (service instanceof DefinedService) {
 				UUID instanceId = UUID.randomUUID();
@@ -109,7 +110,7 @@ public class FlatServiceTrackerWrapper implements ServiceRuntimeTracker {
 	
 	@Override
 	public void before(Object step) {
-		if (step instanceof String && (type == TrackType.STEP || type == TrackType.BOTH)) {
+		if (!stopOnly && step instanceof String && (type == TrackType.STEP || type == TrackType.BOTH)) {
 			UUID instanceId = UUID.randomUUID();
 			steps.push((String) step);
 			started.push(new Date());
@@ -183,4 +184,11 @@ public class FlatServiceTrackerWrapper implements ServiceRuntimeTracker {
 		this.type = type;
 	}
 
+	public boolean isStopOnly() {
+		return stopOnly;
+	}
+
+	public void setStopOnly(boolean stopOnly) {
+		this.stopOnly = stopOnly;
+	}
 }

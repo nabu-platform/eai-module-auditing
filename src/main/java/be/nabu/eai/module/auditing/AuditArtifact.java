@@ -40,6 +40,7 @@ public class AuditArtifact extends JAXBArtifact<AuditConfiguration> implements S
 					if (tracker == null) {
 						tracker = new FlatServiceTrackerWrapper(getConfiguration().getAuditingService(), runtime.getExecutionContext());
 						tracker.setType(getConfig().getTrackType() == null ? TrackType.SERVICE : getConfig().getTrackType());
+						tracker.setStopOnly(getConfig().getStopOnly() != null && getConfig().getStopOnly());
 						runtime.getContext().put("audit:" + getId(), tracker);
 					}
 					return tracker;

@@ -14,7 +14,7 @@ import be.nabu.libs.services.api.DefinedService;
 public class AuditConfiguration {
 	
 	private List<DefinedService> servicesToAudit;
-	private Boolean recursive;
+	private Boolean recursive, stopOnly;
 	private DefinedService auditingService;
 	private TrackType trackType;
 	
@@ -48,5 +48,11 @@ public class AuditConfiguration {
 	public void setTrackType(TrackType trackType) {
 		this.trackType = trackType;
 	}
-	
+	public Boolean getStopOnly() {
+		return stopOnly;
+	}
+	public void setStopOnly(Boolean stopOnly) {
+		this.stopOnly = stopOnly;
+	}
+
 }

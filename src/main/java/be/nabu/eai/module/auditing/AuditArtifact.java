@@ -3,6 +3,7 @@ package be.nabu.eai.module.auditing;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import be.nabu.eai.module.auditing.api.FlatServiceTracker;
 import be.nabu.eai.module.auditing.api.FlatServiceTracker.TrackType;
 import be.nabu.eai.repository.api.Repository;
 import be.nabu.eai.repository.artifacts.jaxb.JAXBArtifact;
@@ -11,6 +12,8 @@ import be.nabu.libs.services.ServiceRuntime;
 import be.nabu.libs.services.ServiceUtils;
 import be.nabu.libs.services.api.ServiceRuntimeTracker;
 import be.nabu.libs.services.api.ServiceRuntimeTrackerProvider;
+import be.nabu.libs.services.pojo.MethodServiceInterface;
+import be.nabu.libs.services.pojo.POJOUtils;
 
 public class AuditArtifact extends JAXBArtifact<AuditConfiguration> implements ServiceRuntimeTrackerProvider {
 
@@ -23,6 +26,10 @@ public class AuditArtifact extends JAXBArtifact<AuditConfiguration> implements S
 	@Override
 	public ServiceRuntimeTracker getTracker(ServiceRuntime runtime) {
 		if (getConfig().getServicesToAudit() != null && !getConfig().getServicesToAudit().isEmpty()) {
+			// don't track the tracker
+			if (POJOUtils.isImplementation(runtime.getService(), MethodServiceInterface.wrap(FlatServiceTracker.class, "track"))) {
+				return null;
+			}
 			try {
 				boolean track = getConfiguration().getServicesToAudit().contains(runtime.getService())
 					|| getConfiguration().getServicesToAudit().contains(ServiceUtils.unwrap(runtime.getService()));

@@ -51,7 +51,7 @@ public class FlatServiceTrackerWrapper implements ServiceRuntimeTracker {
 					instanceId,
 					parentId,
 					ServiceRuntime.getRuntime().getExecutionContext().getSecurityContext().getToken(),
-					((DefinedService) service).getId(),
+					services.peek(),
 					started.peek(),
 					null,
 					null
@@ -79,7 +79,6 @@ public class FlatServiceTrackerWrapper implements ServiceRuntimeTracker {
 					new Date(), 
 					null
 				);
-				services.pop();
 			}
 		}
 	}
@@ -103,7 +102,6 @@ public class FlatServiceTrackerWrapper implements ServiceRuntimeTracker {
 					new Date(), 
 					exception
 				);
-				services.pop();
 			}
 		}
 	}
@@ -116,18 +114,18 @@ public class FlatServiceTrackerWrapper implements ServiceRuntimeTracker {
 			started.push(new Date());
 			UUID parentId = stepInstanceIds.isEmpty() ? null : stepInstanceIds.peek();
 			stepInstanceIds.push(instanceId);
+			steps.push((String) step);
 			tracker.track(
 				runId,
 				TrackType.STEP, 
 				instanceId,
 				parentId,
 				ServiceRuntime.getRuntime().getExecutionContext().getSecurityContext().getToken(),
-				(String) step,
+				steps.peek(),
 				started.peek(),
 				null,
 				null
 			);
-			steps.push((String) step);
 		}
 	}
 
@@ -145,7 +143,6 @@ public class FlatServiceTrackerWrapper implements ServiceRuntimeTracker {
 				new Date(), 
 				exception
 			);
-			steps.pop();
 		}
 	}
 
@@ -163,7 +160,6 @@ public class FlatServiceTrackerWrapper implements ServiceRuntimeTracker {
 				new Date(), 
 				null
 			);
-			steps.pop();
 		}
 	}
 

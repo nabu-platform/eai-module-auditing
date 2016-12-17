@@ -8,6 +8,7 @@ import be.nabu.eai.repository.api.Repository;
 import be.nabu.eai.repository.artifacts.jaxb.JAXBArtifact;
 import be.nabu.libs.resources.api.ResourceContainer;
 import be.nabu.libs.services.ServiceRuntime;
+import be.nabu.libs.services.ServiceUtils;
 import be.nabu.libs.services.api.ServiceRuntimeTracker;
 import be.nabu.libs.services.api.ServiceRuntimeTrackerProvider;
 
@@ -21,9 +22,10 @@ public class AuditArtifact extends JAXBArtifact<AuditConfiguration> implements S
 
 	@Override
 	public ServiceRuntimeTracker getTracker(ServiceRuntime runtime) {
-		if (getConfig().getServicesToAudit() != null && getConfig().getServicesToAudit().isEmpty()) {
+		if (getConfig().getServicesToAudit() != null && !getConfig().getServicesToAudit().isEmpty()) {
 			try {
-				boolean track = getConfiguration().getServicesToAudit().contains(runtime.getService());
+				boolean track = getConfiguration().getServicesToAudit().contains(runtime.getService())
+					|| getConfiguration().getServicesToAudit().contains(ServiceUtils.unwrap(runtime.getService()));
 				// if we want to track recursively
 				if (!track && getConfiguration().getRecursive() != null && getConfiguration().getRecursive()) {
 					ServiceRuntime runtimeToCheck = runtime.getParent();

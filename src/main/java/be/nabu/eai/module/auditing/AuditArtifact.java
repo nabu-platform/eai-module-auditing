@@ -1,8 +1,5 @@
 package be.nabu.eai.module.auditing;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import be.nabu.eai.module.auditing.api.FlatServiceTracker;
 import be.nabu.eai.module.auditing.api.FlatServiceTracker.TrackType;
 import be.nabu.eai.repository.api.Repository;
@@ -17,46 +14,41 @@ import be.nabu.libs.services.pojo.POJOUtils;
 
 public class AuditArtifact extends JAXBArtifact<AuditConfiguration> implements ServiceRuntimeTrackerProvider {
 
-	private Logger logger = LoggerFactory.getLogger(getClass());
+	private MethodServiceInterface trackInterface;
 	
 	public AuditArtifact(String id, ResourceContainer<?> directory, Repository repository) {
 		super(id, directory, repository, "audit.xml", AuditConfiguration.class);
+		trackInterface = MethodServiceInterface.wrap(FlatServiceTracker.class, "track");
 	}
 
 	@Override
 	public ServiceRuntimeTracker getTracker(ServiceRuntime runtime) {
 		if (getConfig().getServicesToAudit() != null && !getConfig().getServicesToAudit().isEmpty()) {
-			// don't track the tracker
-			if (POJOUtils.isImplementation(runtime.getService(), MethodServiceInterface.wrap(FlatServiceTracker.class, "track"))) {
-				return null;
-			}
-			try {
-				boolean track = getConfiguration().getServicesToAudit().contains(runtime.getService())
-					|| getConfiguration().getServicesToAudit().contains(ServiceUtils.unwrap(runtime.getService()));
-				// if we want to track recursively
-				if (!track && getConfiguration().getRecursive() != null && getConfiguration().getRecursive()) {
-					ServiceRuntime runtimeToCheck = runtime.getParent();
-					while (runtimeToCheck != null) {
-						if (getConfiguration().getServicesToAudit().contains(runtime.getParent().getService())) {
-							track = true;
-							break;
-						}
-						runtimeToCheck = runtimeToCheck.getParent();
-					}
+			boolean track = false;
+			ServiceRuntime runtimeToCheck = runtime;
+			while (runtimeToCheck != null) {
+				// if we meet a tracking service, the service is a child from the tracker itself, do not track
+				if (POJOUtils.isImplementation(runtimeToCheck.getService(), trackInterface)) {
+					track = false;
+					break;
 				}
-				if (track) {
-					FlatServiceTrackerWrapper tracker = (FlatServiceTrackerWrapper) runtime.getContext().get("audit:" + getId());
-					if (tracker == null) {
-						tracker = new FlatServiceTrackerWrapper(getConfiguration().getAuditingService(), runtime.getExecutionContext());
-						tracker.setType(getConfig().getTrackType() == null ? TrackType.SERVICE : getConfig().getTrackType());
-						tracker.setStopOnly(getConfig().getStopOnly() != null && getConfig().getStopOnly());
-						runtime.getContext().put("audit:" + getId(), tracker);
-					}
-					return tracker;
+				else if (getConfig().getServicesToAudit().contains(ServiceUtils.unwrap(runtimeToCheck.getService()))) {
+					track = true;
+				}
+				runtimeToCheck = runtimeToCheck.getParent();
+				if (!getConfig().isRecursive()) {
+					break;
 				}
 			}
-			catch (Exception e) {
-				logger.error("Could not load auditing", e);
+			if (track) {
+				FlatServiceTrackerWrapper tracker = (FlatServiceTrackerWrapper) runtime.getContext().get("audit:" + getId());
+				if (tracker == null) {
+					tracker = new FlatServiceTrackerWrapper(getConfig().getAuditingService(), runtime.getExecutionContext());
+					tracker.setType(getConfig().getTrackType() == null ? TrackType.SERVICE : getConfig().getTrackType());
+					tracker.setTimeType(getConfig().getTrackTimeType());
+					runtime.getContext().put("audit:" + getId(), tracker);
+				}
+				return tracker;
 			}
 		}
 		return null;

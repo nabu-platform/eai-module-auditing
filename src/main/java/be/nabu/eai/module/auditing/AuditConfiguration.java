@@ -6,6 +6,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 
 import be.nabu.eai.api.InterfaceFilter;
+import be.nabu.eai.module.auditing.api.FlatServiceTracker.TrackTimeType;
 import be.nabu.eai.module.auditing.api.FlatServiceTracker.TrackType;
 import be.nabu.eai.repository.jaxb.ArtifactXMLAdapter;
 import be.nabu.libs.services.api.DefinedService;
@@ -14,9 +15,10 @@ import be.nabu.libs.services.api.DefinedService;
 public class AuditConfiguration {
 	
 	private List<DefinedService> servicesToAudit;
-	private Boolean recursive, stopOnly;
+	private boolean recursive;
 	private DefinedService auditingService;
 	private TrackType trackType;
+	private TrackTimeType trackTimeType;
 	
 	@XmlJavaTypeAdapter(value = ArtifactXMLAdapter.class)
 	public List<DefinedService> getServicesToAudit() {
@@ -35,10 +37,10 @@ public class AuditConfiguration {
 		this.auditingService = auditingService;
 	}
 	
-	public Boolean getRecursive() {
+	public boolean isRecursive() {
 		return recursive;
 	}
-	public void setRecursive(Boolean recursive) {
+	public void setRecursive(boolean recursive) {
 		this.recursive = recursive;
 	}
 
@@ -48,11 +50,14 @@ public class AuditConfiguration {
 	public void setTrackType(TrackType trackType) {
 		this.trackType = trackType;
 	}
-	public Boolean getStopOnly() {
-		return stopOnly;
+	public TrackTimeType getTrackTimeType() {
+		if (trackTimeType == null) {
+			trackTimeType = TrackTimeType.ALL;
+		}
+		return trackTimeType;
 	}
-	public void setStopOnly(Boolean stopOnly) {
-		this.stopOnly = stopOnly;
+	public void setTrackTimeType(TrackTimeType trackTimeType) {
+		this.trackTimeType = trackTimeType;
 	}
 
 }

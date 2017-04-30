@@ -1,11 +1,13 @@
 package be.nabu.eai.module.auditing.api;
 
 import java.util.Date;
+import java.util.List;
 import java.util.UUID;
 
 import javax.jws.WebParam;
 import javax.validation.constraints.NotNull;
 
+import be.nabu.libs.authentication.api.Device;
 import be.nabu.libs.authentication.api.Token;
 
 public interface FlatServiceTracker {
@@ -17,8 +19,9 @@ public interface FlatServiceTracker {
 		// the id of this service instance
 		@NotNull @WebParam(name = "instanceId") UUID instanceId,
 		// the id of the parent service instance
-		@WebParam(name = "parentId") UUID parentId,
+		@WebParam(name = "hierarchy") List<UUID> hierarchy,
 		@WebParam(name = "token") Token token,
+		@WebParam(name = "device") Device device,
 		@NotNull @WebParam(name="name") String service,
 		// when the service/step started
 		@NotNull @WebParam(name = "started") Date started,
@@ -30,5 +33,12 @@ public interface FlatServiceTracker {
 		SERVICE,
 		STEP,
 		BOTH
+	}
+	
+	public enum TrackTimeType {
+		BEFORE,
+		AFTER,
+		ERROR,
+		ALL
 	}
 }

@@ -94,7 +94,7 @@ public class FlatServiceTrackerWrapper implements ServiceRuntimeTracker {
 			service = ServiceUtils.unwrap(service);
 			if (!services.isEmpty() && service instanceof DefinedService) {
 				if (!((DefinedService) service).getId().equals(services.peek())) {
-					throw new RuntimeException("Service does not match the stack");
+					throw new RuntimeException("Service '" + ((DefinedService) service).getId() + "' does not match the stack: " + services);
 				}
 				if (timeType == TrackTimeType.AFTER || timeType == TrackTimeType.ALL) {
 					tracker.track(
@@ -110,6 +110,12 @@ public class FlatServiceTrackerWrapper implements ServiceRuntimeTracker {
 						null
 					);
 				}
+				// do pop all the stacks
+				else {
+					services.pop();
+					started.pop();
+					serviceInstanceIds.pop();
+				}
 			}
 		}
 	}
@@ -120,7 +126,7 @@ public class FlatServiceTrackerWrapper implements ServiceRuntimeTracker {
 			service = ServiceUtils.unwrap(service);
 			if (!services.isEmpty() && service instanceof DefinedService) {
 				if (!((DefinedService) service).getId().equals(services.peek())) {
-					throw new RuntimeException("Service does not match the stack");
+					throw new RuntimeException("Service '" + ((DefinedService) service).getId() + "' does not match the stack: " + services);
 				}
 				tracker.track(
 					runId,

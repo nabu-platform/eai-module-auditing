@@ -19,6 +19,7 @@ import be.nabu.libs.services.api.ExecutionContext;
 import be.nabu.libs.services.api.Service;
 import be.nabu.libs.services.api.ServiceRuntimeTracker;
 import be.nabu.libs.services.pojo.POJOUtils;
+import be.nabu.libs.types.java.BeanInstance;
 
 // TODO: if we have other interesting steps that can not provide a correct toString(), we can add a concept of serializers
 public class FlatServiceTrackerWrapper implements ServiceRuntimeTracker {
@@ -144,12 +145,14 @@ public class FlatServiceTrackerWrapper implements ServiceRuntimeTracker {
 		}
 	}
 	
+	@SuppressWarnings("rawtypes")
 	@Override
 	public void before(Object step) {
 		if (!(step instanceof String)) {
-			step = step.toString();
+			BeanInstance beanInstance = new BeanInstance(step);
+			step = beanInstance.get("name");
 		}
-		if (type == TrackType.STEP || type == TrackType.BOTH) {
+		if (step != null && (type == TrackType.STEP || type == TrackType.BOTH)) {
 			UUID instanceId = UUID.randomUUID();
 			steps.push((String) step);
 			started.push(new Date());
@@ -172,12 +175,14 @@ public class FlatServiceTrackerWrapper implements ServiceRuntimeTracker {
 		}
 	}
 
+	@SuppressWarnings("rawtypes")
 	@Override
 	public void error(Object step, Exception exception) {
 		if (!(step instanceof String)) {
-			step = step.toString();
+			BeanInstance beanInstance = new BeanInstance(step);
+			step = beanInstance.get("name");
 		}
-		if (type == TrackType.STEP || type == TrackType.BOTH) {
+		if (step != null && (type == TrackType.STEP || type == TrackType.BOTH)) {
 			tracker.track(
 				runId,
 				TrackType.STEP,
@@ -193,12 +198,14 @@ public class FlatServiceTrackerWrapper implements ServiceRuntimeTracker {
 		}
 	}
 
+	@SuppressWarnings("rawtypes")
 	@Override
 	public void after(Object step) {
 		if (!(step instanceof String)) {
-			step = step.toString();
+			BeanInstance beanInstance = new BeanInstance(step);
+			step = beanInstance.get("name");
 		}
-		if (type == TrackType.STEP || type == TrackType.BOTH) {
+		if (step != null && (type == TrackType.STEP || type == TrackType.BOTH)) {
 			if (timeType == TrackTimeType.AFTER || timeType == TrackTimeType.ALL) {
 				tracker.track(
 					runId,

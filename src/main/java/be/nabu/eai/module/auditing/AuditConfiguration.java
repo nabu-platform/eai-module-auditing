@@ -8,6 +8,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 
 import be.nabu.eai.api.EnvironmentSpecific;
+import be.nabu.eai.api.Hidden;
 import be.nabu.eai.api.InterfaceFilter;
 import be.nabu.eai.module.auditing.api.FlatServiceTracker.TrackTimeType;
 import be.nabu.eai.module.auditing.api.FlatServiceTracker.TrackType;
@@ -19,7 +20,7 @@ import be.nabu.libs.services.api.DefinedService;
 public class AuditConfiguration {
 	
 	private List<String> servicesToAudit;
-	private boolean recursive;
+	private boolean recursive, auditAll, checkServiceContext;
 	private DefinedService auditingService;
 	private TrackType trackType;
 	private TrackTimeType trackTimeType;
@@ -74,5 +75,18 @@ public class AuditConfiguration {
 	}
 	public void setProperties(Map<String, String> properties) {
 		this.properties = properties;
+	}
+	@Hidden
+	public boolean isAuditAll() {
+		return auditAll;
+	}
+	public void setAuditAll(boolean auditAll) {
+		this.auditAll = auditAll;
+	}
+	public boolean isCheckServiceContext() {
+		return checkServiceContext;
+	}
+	public void setCheckServiceContext(boolean checkServiceContext) {
+		this.checkServiceContext = checkServiceContext;
 	}
 }

@@ -82,7 +82,9 @@ public class FlatServiceTrackerWrapper implements ServiceRuntimeTracker {
 						services.peek(),
 						started.peek(),
 						null,
-						null
+						null,
+						ServiceRuntime.getRuntime().getInput(),
+						ServiceRuntime.getRuntime().getOutput()
 					);
 				}
 			}
@@ -108,7 +110,9 @@ public class FlatServiceTrackerWrapper implements ServiceRuntimeTracker {
 						services.pop(), 
 						started.pop(),
 						new Date(), 
-						null
+						null,
+						ServiceRuntime.getRuntime().getInput(),
+						ServiceRuntime.getRuntime().getOutput()
 					);
 				}
 				// do pop all the stacks
@@ -139,7 +143,9 @@ public class FlatServiceTrackerWrapper implements ServiceRuntimeTracker {
 					services.pop(), 
 					started.pop(),
 					new Date(), 
-					exception
+					exception,
+					ServiceRuntime.getRuntime().getInput(),
+					ServiceRuntime.getRuntime().getOutput()
 				);
 			}
 		}
@@ -169,6 +175,8 @@ public class FlatServiceTrackerWrapper implements ServiceRuntimeTracker {
 					steps.peek(),
 					started.peek(),
 					null,
+					null,
+					null,
 					null
 				);
 			}
@@ -193,7 +201,9 @@ public class FlatServiceTrackerWrapper implements ServiceRuntimeTracker {
 				steps.pop(), 
 				started.pop(),
 				new Date(), 
-				exception
+				exception,
+				null,
+				null
 			);
 		}
 	}
@@ -217,6 +227,8 @@ public class FlatServiceTrackerWrapper implements ServiceRuntimeTracker {
 					steps.pop(), 
 					started.pop(),
 					new Date(), 
+					null,
+					null,
 					null
 				);
 			}

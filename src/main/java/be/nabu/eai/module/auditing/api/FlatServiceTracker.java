@@ -27,7 +27,9 @@ public interface FlatServiceTracker {
 		@NotNull @WebParam(name = "started") Date started,
 		// if the service/step stopped (unless it is still running)
 		@WebParam(name = "stopped") Date stopped,
-		@WebParam(name="exception") Exception exception);
+		@WebParam(name = "exception") Exception exception,
+		@WebParam(name = "input") Object input,
+		@WebParam(name = "output") Object output);
 	
 	public enum TrackType {
 		SERVICE,

@@ -33,6 +33,7 @@ public class FlatServiceTrackerWrapper implements ServiceRuntimeTracker {
 	private Stack<Date> started = new Stack<Date>();
 	private TrackType type;
 	private TrackTimeType timeType;
+	private boolean includeReports, includeDescriptions, includeServices, includeSteps;
 	
 	public FlatServiceTrackerWrapper(Service service, ExecutionContext context) {
 		// force an empty tracker to prevent recursive tracker calls
@@ -64,7 +65,7 @@ public class FlatServiceTrackerWrapper implements ServiceRuntimeTracker {
 	
 	@Override
 	public void start(Service service) {
-		if (type == TrackType.SERVICE || type == TrackType.BOTH) {
+		if (includeServices) {
 			service = ServiceUtils.unwrap(service);
 			if (service instanceof DefinedService) {
 				UUID instanceId = UUID.randomUUID();
@@ -93,7 +94,7 @@ public class FlatServiceTrackerWrapper implements ServiceRuntimeTracker {
 	
 	@Override
 	public void stop(Service service) {
-		if (type == TrackType.SERVICE || type == TrackType.BOTH) {
+		if (includeServices) {
 			service = ServiceUtils.unwrap(service);
 			if (!services.isEmpty() && service instanceof DefinedService) {
 				if (!((DefinedService) service).getId().equals(services.peek())) {
@@ -127,7 +128,7 @@ public class FlatServiceTrackerWrapper implements ServiceRuntimeTracker {
 	
 	@Override
 	public void error(Service service, Exception exception) {
-		if (type == TrackType.SERVICE || type == TrackType.BOTH) {
+		if (includeServices) {
 			service = ServiceUtils.unwrap(service);
 			if (!services.isEmpty() && service instanceof DefinedService) {
 				if (!((DefinedService) service).getId().equals(services.peek())) {
@@ -158,7 +159,7 @@ public class FlatServiceTrackerWrapper implements ServiceRuntimeTracker {
 			BeanInstance beanInstance = new BeanInstance(step);
 			step = beanInstance.get("name");
 		}
-		if (step != null && (type == TrackType.STEP || type == TrackType.BOTH)) {
+		if (step != null && includeSteps) {
 			UUID instanceId = UUID.randomUUID();
 			steps.push((String) step);
 			started.push(new Date());
@@ -190,7 +191,7 @@ public class FlatServiceTrackerWrapper implements ServiceRuntimeTracker {
 			BeanInstance beanInstance = new BeanInstance(step);
 			step = beanInstance.get("name");
 		}
-		if (step != null && (type == TrackType.STEP || type == TrackType.BOTH)) {
+		if (step != null && includeSteps) {
 			tracker.track(
 				runId,
 				TrackType.STEP,
@@ -215,7 +216,7 @@ public class FlatServiceTrackerWrapper implements ServiceRuntimeTracker {
 			BeanInstance beanInstance = new BeanInstance(step);
 			step = beanInstance.get("name");
 		}
-		if (step != null && (type == TrackType.STEP || type == TrackType.BOTH)) {
+		if (step != null && includeSteps) {
 			if (timeType == TrackTimeType.AFTER || timeType == TrackTimeType.ALL) {
 				tracker.track(
 					runId,

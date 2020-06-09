@@ -34,6 +34,8 @@ public interface FlatServiceTracker {
 	public enum TrackType {
 		SERVICE,
 		STEP,
+		REPORT,
+		DESCRIPTION,
 		BOTH
 	}
 	

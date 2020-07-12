@@ -28,6 +28,11 @@ public class AuditArtifact extends JAXBArtifact<AuditConfiguration> implements S
 
 	@Override
 	public ServiceRuntimeTracker getTracker(ServiceRuntime runtime) {
+		// if we have disabled auditing for this context, don't set a tracker
+		Object object = runtime.getContext().get("audit.disabled");
+		if (object instanceof Boolean && (Boolean) object) {
+			return null;
+		}
 		boolean track = false;
 		if (getConfig().isAuditAll()) {
 			// if we want to track everything, just set that
@@ -106,6 +111,18 @@ public class AuditArtifact extends JAXBArtifact<AuditConfiguration> implements S
 					tracker = new FlatServiceTrackerWrapper(getConfig().getAuditingService(), runtime.getExecutionContext());
 				}
 				tracker.setType(getConfig().getTrackType() == null ? TrackType.SERVICE : getConfig().getTrackType());
+				if (getConfig().getIncludeDescriptions() != null) {
+					tracker.setIncludeDescriptions(getConfig().getIncludeDescriptions());
+				}
+				if (getConfig().getIncludeReports() != null) {
+					tracker.setIncludeReports(getConfig().getIncludeReports());
+				}
+				if (getConfig().getIncludeServices() != null) {
+					tracker.setIncludeServices(getConfig().getIncludeServices());
+				}
+				if (getConfig().getIncludeSteps() != null) {
+					tracker.setIncludeSteps(getConfig().getIncludeSteps());
+				}
 				tracker.setTimeType(getConfig().getTrackTimeType());
 				runtime.getContext().put("audit:" + getId(), tracker);
 			}

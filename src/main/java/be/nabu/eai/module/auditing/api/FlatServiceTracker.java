@@ -7,6 +7,7 @@ import java.util.UUID;
 import javax.jws.WebParam;
 import javax.validation.constraints.NotNull;
 
+import be.nabu.libs.artifacts.api.ExternalDependency;
 import be.nabu.libs.authentication.api.Device;
 import be.nabu.libs.authentication.api.Token;
 
@@ -29,7 +30,14 @@ public interface FlatServiceTracker {
 		@WebParam(name = "stopped") Date stopped,
 		@WebParam(name = "exception") Exception exception,
 		@WebParam(name = "input") Object input,
-		@WebParam(name = "output") Object output);
+		@WebParam(name = "output") Object output,
+		@WebParam(name = "cached") Boolean cached,
+		@WebParam(name = "external") List<ExternalDependency> externalDependencies,
+		@WebParam(name = "sequence") Long sequence,
+		// how long it took in ms
+		@WebParam(name = "duration") Long duration,
+		@WebParam(name = "depth") Integer depth,
+		@WebParam(name = "source") String source);
 	
 	public enum TrackType {
 		SERVICE,

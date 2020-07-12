@@ -9,6 +9,7 @@ import java.util.UUID;
 import be.nabu.eai.module.auditing.api.FlatServiceTracker;
 import be.nabu.eai.module.auditing.api.FlatServiceTracker.TrackTimeType;
 import be.nabu.eai.module.auditing.api.FlatServiceTracker.TrackType;
+import be.nabu.libs.artifacts.api.ExternalDependencyArtifact;
 import be.nabu.libs.authentication.api.Device;
 import be.nabu.libs.authentication.api.Token;
 import be.nabu.libs.authentication.api.principals.DevicePrincipal;
@@ -31,8 +32,10 @@ public class FlatServiceTrackerWrapper implements ServiceRuntimeTracker {
 	private Stack<UUID> serviceInstanceIds = new Stack<UUID>();
 	private Stack<UUID> stepInstanceIds = new Stack<UUID>();
 	private Stack<Date> started = new Stack<Date>();
+	private Stack<Long> sequences = new Stack<Long>();
 	private TrackType type;
 	private TrackTimeType timeType;
+	private long sequence;
 	private boolean includeReports, includeDescriptions, includeServices, includeSteps;
 	
 	public FlatServiceTrackerWrapper(Service service, ExecutionContext context) {
@@ -72,6 +75,7 @@ public class FlatServiceTrackerWrapper implements ServiceRuntimeTracker {
 				services.push(((DefinedService) service).getId());
 				started.push(new Date());
 				serviceInstanceIds.push(instanceId);
+				sequences.push(sequence++);
 				if (timeType == TrackTimeType.BEFORE || timeType == TrackTimeType.ALL) {
 					tracker.track(
 						runId,
@@ -85,7 +89,13 @@ public class FlatServiceTrackerWrapper implements ServiceRuntimeTracker {
 						null,
 						null,
 						ServiceRuntime.getRuntime().getInput(),
-						ServiceRuntime.getRuntime().getOutput()
+						ServiceRuntime.getRuntime().getOutput(),
+						ServiceRuntime.getRuntime().getCachedResult(),
+						service instanceof ExternalDependencyArtifact ? ((ExternalDependencyArtifact) service).getExternalDependencies() : null,
+						sequences.peek(),
+						null,
+						services.size() - 1,
+						(String) ServiceRuntime.getRuntime().getContext().get("service.source")
 					);
 				}
 			}
@@ -101,6 +111,8 @@ public class FlatServiceTrackerWrapper implements ServiceRuntimeTracker {
 					throw new RuntimeException("Service '" + ((DefinedService) service).getId() + "' does not match the stack: " + services);
 				}
 				if (timeType == TrackTimeType.AFTER || timeType == TrackTimeType.ALL) {
+					Date serviceStarted = started.pop();
+					Date serviceStopped = new Date();
 					tracker.track(
 						runId,
 						TrackType.SERVICE,
@@ -109,11 +121,17 @@ public class FlatServiceTrackerWrapper implements ServiceRuntimeTracker {
 						ServiceRuntime.getRuntime().getExecutionContext().getSecurityContext().getToken(), 
 						getDevice(),
 						services.pop(), 
-						started.pop(),
-						new Date(), 
+						serviceStarted,
+						serviceStopped, 
 						null,
 						ServiceRuntime.getRuntime().getInput(),
-						ServiceRuntime.getRuntime().getOutput()
+						ServiceRuntime.getRuntime().getOutput(),
+						ServiceRuntime.getRuntime().getCachedResult(),
+						service instanceof ExternalDependencyArtifact ? ((ExternalDependencyArtifact) service).getExternalDependencies() : null,
+						sequences.pop(),
+						serviceStopped.getTime() - serviceStarted.getTime(),
+						services.size(),
+						(String) ServiceRuntime.getRuntime().getContext().get("service.source")
 					);
 				}
 				// do pop all the stacks
@@ -134,6 +152,8 @@ public class FlatServiceTrackerWrapper implements ServiceRuntimeTracker {
 				if (!((DefinedService) service).getId().equals(services.peek())) {
 					throw new RuntimeException("Service '" + ((DefinedService) service).getId() + "' does not match the stack: " + services);
 				}
+				Date serviceStarted = started.pop();
+				Date serviceStopped = new Date();
 				tracker.track(
 					runId,
 					TrackType.SERVICE,
@@ -142,11 +162,17 @@ public class FlatServiceTrackerWrapper implements ServiceRuntimeTracker {
 					ServiceRuntime.getRuntime().getExecutionContext().getSecurityContext().getToken(),
 					getDevice(),
 					services.pop(), 
-					started.pop(),
-					new Date(), 
+					serviceStarted,
+					serviceStopped, 
 					exception,
 					ServiceRuntime.getRuntime().getInput(),
-					ServiceRuntime.getRuntime().getOutput()
+					ServiceRuntime.getRuntime().getOutput(),
+					ServiceRuntime.getRuntime().getCachedResult(),
+					service instanceof ExternalDependencyArtifact ? ((ExternalDependencyArtifact) service).getExternalDependencies() : null,
+					sequences.pop(),
+					serviceStopped.getTime() - serviceStarted.getTime(),
+					services.size(),
+					(String) ServiceRuntime.getRuntime().getContext().get("service.source")
 				);
 			}
 		}
@@ -178,7 +204,13 @@ public class FlatServiceTrackerWrapper implements ServiceRuntimeTracker {
 					null,
 					null,
 					null,
-					null
+					null,
+					null,
+					null,
+					null,
+					null,
+					steps.size() - 1,
+					(String) ServiceRuntime.getRuntime().getContext().get("service.source")
 				);
 			}
 		}
@@ -192,6 +224,8 @@ public class FlatServiceTrackerWrapper implements ServiceRuntimeTracker {
 			step = beanInstance.get("name");
 		}
 		if (step != null && includeSteps) {
+			Date stepStarted = started.pop();
+			Date stepStopped = new Date();
 			tracker.track(
 				runId,
 				TrackType.STEP,
@@ -200,11 +234,17 @@ public class FlatServiceTrackerWrapper implements ServiceRuntimeTracker {
 				ServiceRuntime.getRuntime().getExecutionContext().getSecurityContext().getToken(),
 				getDevice(),
 				steps.pop(), 
-				started.pop(),
-				new Date(), 
+				stepStarted,
+				stepStopped, 
 				exception,
 				null,
-				null
+				null,
+				null,
+				null,
+				null,
+				stepStopped.getTime() - stepStarted.getTime(),
+				steps.size(),
+				(String) ServiceRuntime.getRuntime().getContext().get("service.source")
 			);
 		}
 	}
@@ -218,6 +258,8 @@ public class FlatServiceTrackerWrapper implements ServiceRuntimeTracker {
 		}
 		if (step != null && includeSteps) {
 			if (timeType == TrackTimeType.AFTER || timeType == TrackTimeType.ALL) {
+				Date stepStarted = started.pop();
+				Date stepStopped = new Date();
 				tracker.track(
 					runId,
 					TrackType.STEP,
@@ -226,31 +268,95 @@ public class FlatServiceTrackerWrapper implements ServiceRuntimeTracker {
 					ServiceRuntime.getRuntime().getExecutionContext().getSecurityContext().getToken(),
 					getDevice(),
 					steps.pop(), 
-					started.pop(),
-					new Date(), 
+					stepStarted,
+					stepStopped, 
 					null,
 					null,
-					null
+					null,
+					null,
+					null,
+					null,
+					stepStopped.getTime() - stepStarted.getTime(),
+					steps.size(),
+					(String) ServiceRuntime.getRuntime().getContext().get("service.source")
 				);
 			}
 		}
 	}
 
 	@Override
-	public void report(Object arg0) {
-		// do nothing
+	public void report(Object report) {
+		if (report != null && includeReports) {
+			tracker.track(
+				runId,
+				TrackType.REPORT,
+				serviceInstanceIds.peek(), 
+				new ArrayList<UUID>(serviceInstanceIds), 
+				ServiceRuntime.getRuntime().getExecutionContext().getSecurityContext().getToken(),
+				getDevice(),
+				services.peek(), 
+				started.peek(),
+				null, 
+				null,
+				report,
+				null,
+				null,
+				null,
+				sequences.peek(),
+				null,
+				services.size(),
+				(String) ServiceRuntime.getRuntime().getContext().get("service.source")
+			);
+		}
+	}
+	
+	@Override
+	public void describe(Object description) {
+		if (description != null && includeDescriptions) {
+			tracker.track(
+				runId,
+				TrackType.DESCRIPTION,
+				serviceInstanceIds.peek(), 
+				new ArrayList<UUID>(serviceInstanceIds), 
+				ServiceRuntime.getRuntime().getExecutionContext().getSecurityContext().getToken(),
+				getDevice(),
+				services.peek(),
+				started.peek(),
+				null, 
+				null,
+				description,
+				null,
+				null,
+				null,
+				sequences.peek(),
+				null,
+				services.size(),
+				(String) ServiceRuntime.getRuntime().getContext().get("service.source")
+			);
+		}
 	}
 
 	public Stack<String> getServices() {
 		return services;
 	}
 
+	@Deprecated
 	public TrackType getType() {
 		return type;
 	}
-
+	@Deprecated
 	public void setType(TrackType type) {
 		this.type = type;
+		if (TrackType.SERVICE.equals(type)) {
+			includeServices = true;
+		}
+		else if (TrackType.STEP.equals(type)) {
+			includeSteps = true;
+		}
+		else if (TrackType.BOTH.equals(type)) {
+			includeServices = true;
+			includeSteps = true;
+		}
 	}
 
 	public TrackTimeType getTimeType() {
@@ -260,4 +366,37 @@ public class FlatServiceTrackerWrapper implements ServiceRuntimeTracker {
 	public void setTimeType(TrackTimeType timeType) {
 		this.timeType = timeType;
 	}
+
+	public boolean isIncludeReports() {
+		return includeReports;
+	}
+
+	public void setIncludeReports(boolean includeReports) {
+		this.includeReports = includeReports;
+	}
+
+	public boolean isIncludeDescriptions() {
+		return includeDescriptions;
+	}
+
+	public void setIncludeDescriptions(boolean includeDescriptions) {
+		this.includeDescriptions = includeDescriptions;
+	}
+
+	public boolean isIncludeServices() {
+		return includeServices;
+	}
+
+	public void setIncludeServices(boolean includeServices) {
+		this.includeServices = includeServices;
+	}
+
+	public boolean isIncludeSteps() {
+		return includeSteps;
+	}
+
+	public void setIncludeSteps(boolean includeSteps) {
+		this.includeSteps = includeSteps;
+	}
+	
 }

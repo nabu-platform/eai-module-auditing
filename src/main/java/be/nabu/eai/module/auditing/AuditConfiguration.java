@@ -8,13 +8,13 @@ import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 
 import be.nabu.eai.api.EnvironmentSpecific;
-import be.nabu.eai.api.Hidden;
 import be.nabu.eai.api.InterfaceFilter;
 import be.nabu.eai.module.auditing.api.FlatServiceTracker.TrackTimeType;
 import be.nabu.eai.module.auditing.api.FlatServiceTracker.TrackType;
 import be.nabu.eai.repository.jaxb.ArtifactXMLAdapter;
 import be.nabu.eai.repository.util.KeyValueMapAdapter;
 import be.nabu.libs.services.api.DefinedService;
+import be.nabu.libs.types.api.annotation.Field;
 
 @XmlRootElement(name = "audit")
 public class AuditConfiguration {
@@ -25,7 +25,9 @@ public class AuditConfiguration {
 	private TrackType trackType;
 	private TrackTimeType trackTimeType;
 	private Map<String, String> properties;
+	private Boolean includeReports, includeDescriptions, includeServices, includeSteps;
 	
+	@Field(hide = "!auditAll")
 	public List<String> getServicesToAudit() {
 		return servicesToAudit;
 	}
@@ -49,12 +51,16 @@ public class AuditConfiguration {
 		this.recursive = recursive;
 	}
 
+	@Field(hide = "true")
+	@Deprecated
 	public TrackType getTrackType() {
 		return trackType;
 	}
+	@Deprecated
 	public void setTrackType(TrackType trackType) {
 		this.trackType = trackType;
 	}
+	
 	public TrackTimeType getTrackTimeType() {
 		if (trackTimeType == null) {
 			trackTimeType = TrackTimeType.ALL;
@@ -76,7 +82,7 @@ public class AuditConfiguration {
 	public void setProperties(Map<String, String> properties) {
 		this.properties = properties;
 	}
-	@Hidden
+	@Field(hide = "servicesToAudit != null")
 	public boolean isAuditAll() {
 		return auditAll;
 	}
@@ -88,5 +94,29 @@ public class AuditConfiguration {
 	}
 	public void setCheckServiceContext(boolean checkServiceContext) {
 		this.checkServiceContext = checkServiceContext;
+	}
+	public Boolean getIncludeReports() {
+		return includeReports;
+	}
+	public void setIncludeReports(Boolean includeReports) {
+		this.includeReports = includeReports;
+	}
+	public Boolean getIncludeDescriptions() {
+		return includeDescriptions;
+	}
+	public void setIncludeDescriptions(Boolean includeDescriptions) {
+		this.includeDescriptions = includeDescriptions;
+	}
+	public Boolean getIncludeServices() {
+		return includeServices;
+	}
+	public void setIncludeServices(Boolean includeServices) {
+		this.includeServices = includeServices;
+	}
+	public Boolean getIncludeSteps() {
+		return includeSteps;
+	}
+	public void setIncludeSteps(Boolean includeSteps) {
+		this.includeSteps = includeSteps;
 	}
 }

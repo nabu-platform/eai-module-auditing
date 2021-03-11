@@ -27,7 +27,7 @@ public class AuditConfiguration {
 	private Map<String, String> properties;
 	private Boolean includeReports, includeDescriptions, includeServices, includeSteps;
 	
-	@Field(hide = "!auditAll")
+	@Field(hide = "auditAll")
 	public List<String> getServicesToAudit() {
 		return servicesToAudit;
 	}

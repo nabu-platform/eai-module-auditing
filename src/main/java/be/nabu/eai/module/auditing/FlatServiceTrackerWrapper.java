@@ -287,25 +287,26 @@ public class FlatServiceTrackerWrapper implements ServiceRuntimeTracker {
 	@Override
 	public void report(Object report) {
 		if (report != null && includeReports) {
+			ServiceRuntime runtime = ServiceRuntime.getRuntime();
 			tracker.track(
 				runId,
 				TrackType.REPORT,
-				serviceInstanceIds.peek(), 
+				serviceInstanceIds.isEmpty() ? null : serviceInstanceIds.peek(), 
 				new ArrayList<UUID>(serviceInstanceIds), 
-				ServiceRuntime.getRuntime().getExecutionContext().getSecurityContext().getToken(),
-				getDevice(),
-				services.peek(), 
-				started.peek(),
+				runtime == null ? null : runtime.getExecutionContext().getSecurityContext().getToken(),
+				runtime == null ? null : getDevice(),
+				services.isEmpty() ? null : services.peek(), 
+				started.isEmpty() ? null : started.peek(),
 				null, 
 				null,
 				report,
 				null,
 				null,
 				null,
-				sequences.peek(),
+				sequences.isEmpty() ? null : sequences.peek(),
 				null,
 				services.size(),
-				(String) ServiceRuntime.getRuntime().getContext().get("service.source")
+				runtime == null ? null : (String) runtime.getContext().get("service.source")
 			);
 		}
 	}
@@ -313,25 +314,26 @@ public class FlatServiceTrackerWrapper implements ServiceRuntimeTracker {
 	@Override
 	public void describe(Object description) {
 		if (description != null && includeDescriptions) {
+			ServiceRuntime runtime = ServiceRuntime.getRuntime();
 			tracker.track(
 				runId,
 				TrackType.DESCRIPTION,
-				serviceInstanceIds.peek(), 
+				serviceInstanceIds.isEmpty() ? null : serviceInstanceIds.peek(), 
 				new ArrayList<UUID>(serviceInstanceIds), 
-				ServiceRuntime.getRuntime().getExecutionContext().getSecurityContext().getToken(),
-				getDevice(),
-				services.peek(),
-				started.peek(),
+				runtime == null ? null : runtime.getExecutionContext().getSecurityContext().getToken(),
+				runtime == null ? null : getDevice(),
+				services.isEmpty() ? null : services.peek(),
+				started.isEmpty() ? null : started.peek(),
 				null, 
 				null,
 				description,
 				null,
 				null,
 				null,
-				sequences.peek(),
+				sequences.isEmpty() ? null : sequences.peek(),
 				null,
 				services.size(),
-				(String) ServiceRuntime.getRuntime().getContext().get("service.source")
+				runtime == null ? null : (String) runtime.getContext().get("service.source")
 			);
 		}
 	}

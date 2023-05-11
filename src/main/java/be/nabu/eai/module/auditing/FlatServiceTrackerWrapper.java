@@ -48,22 +48,23 @@ public class FlatServiceTrackerWrapper implements ServiceRuntimeTracker {
 	}
 	
 	private Device getDevice() {
-		Token token = ServiceRuntime.getRuntime().getExecutionContext().getSecurityContext().getToken();
-		Device device = null;
-		if (token != null && token instanceof DevicePrincipal) {
-			device = ((DevicePrincipal) token).getDevice();
-		}
-		if (device == null && token != null && token.getCredentials() != null && !token.getCredentials().isEmpty()) {
-			for (Principal credential : token.getCredentials()) {
-				if (credential instanceof DevicePrincipal) {
-					device = ((DevicePrincipal) credential).getDevice();
-					if (device != null) {
-						break;
-					}
-				}
-			}
-		}
-		return device;
+		return ServiceRuntime.getRuntime().getExecutionContext().getSecurityContext().getDevice();
+//		Token token = ServiceRuntime.getRuntime().getExecutionContext().getSecurityContext().getToken();
+//		Device device = null;
+//		if (token != null && token instanceof DevicePrincipal) {
+//			device = ((DevicePrincipal) token).getDevice();
+//		}
+//		if (device == null && token != null && token.getCredentials() != null && !token.getCredentials().isEmpty()) {
+//			for (Principal credential : token.getCredentials()) {
+//				if (credential instanceof DevicePrincipal) {
+//					device = ((DevicePrincipal) credential).getDevice();
+//					if (device != null) {
+//						break;
+//					}
+//				}
+//			}
+//		}
+//		return device;
 	}
 	
 	@Override

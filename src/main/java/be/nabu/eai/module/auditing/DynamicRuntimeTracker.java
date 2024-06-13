@@ -21,10 +21,15 @@ public class DynamicRuntimeTracker implements ServiceRuntimeTrackerProvider {
 
 	private Map<String, List<DefinedService>> trackers = new ConcurrentHashMap<String, List<DefinedService>>();
 	private MethodServiceInterface trackInterface;
-	private boolean recursive;
+	private TraceProfile profile;
 	
 	public DynamicRuntimeTracker() {
 		trackInterface = MethodServiceInterface.wrap(FlatServiceTracker.class, "track");
+	}
+	
+	public DynamicRuntimeTracker(TraceProfile profile) {
+		this();
+		this.profile = profile;
 	}
 	
 	@Override
@@ -32,7 +37,7 @@ public class DynamicRuntimeTracker implements ServiceRuntimeTrackerProvider {
 		ServiceRuntime runtimeToCheck = runtime;
 		MultipleServiceRuntimeTracker serviceTracker = null;
 		
-		String key = "dynamic-audit-" + (recursive ? "recursive" : "non-recursive");
+		String key = "dynamic-audit-" + profile.toString();
 		// if we already have a tracker, we don't want to register a new one because this would mess up run ids etc
 		// this is meant for long term auditing, so if you add an auditer _while_ the target is already running, too bad, you are missing that run
 		MultipleServiceRuntimeTracker currentTracker = (MultipleServiceRuntimeTracker) runtime.getContext().get(key);
@@ -48,28 +53,35 @@ public class DynamicRuntimeTracker implements ServiceRuntimeTrackerProvider {
 			if (POJOUtils.isImplementation(runtimeToCheck.getService(), trackInterface)) {
 				break;
 			}
-			if (unwrap instanceof DefinedService && trackers.containsKey(((DefinedService) unwrap).getId())) {
-				List<DefinedService> list = trackers.get(((DefinedService) unwrap).getId());
+			String serviceId = unwrap instanceof DefinedService ? ((DefinedService) unwrap).getId() : null;
+			if (serviceId != null && trackers.containsKey(serviceId)) {
+				List<DefinedService> list = trackers.get(serviceId);
 				if (list != null && !list.isEmpty()) {
 					shouldTrack = true;
+					System.out.println("----------- Tracking " + serviceId + " with -> ");
 					// only go through the trouble of constructing an actual tracker if we don't have one yet
 					if (currentTracker == null) {
 						List<ServiceRuntimeTracker> tracker = new ArrayList<ServiceRuntimeTracker>();
 						for (DefinedService single : list) {
 							FlatServiceTrackerWrapper wrapper = new FlatServiceTrackerWrapper(single, runtime.getExecutionContext());
-							wrapper.setIncludeServices(true);
-							wrapper.setIncludeSteps(false);
-							wrapper.setIncludeReports(false);
-							wrapper.setTimeType(TrackTimeType.ALL);
-							wrapper.setIncludeDescriptions(true);
+							wrapper.setIncludeServices(profile.isServices());
+							wrapper.setIncludeSteps(profile.isSteps());
+							wrapper.setIncludeReports(profile.isReports());
+							wrapper.setRootServiceOnly(profile.isRootServiceOnly());
+							wrapper.setTimeType(profile.getTrackTimeType() == null ? TrackTimeType.ALL : profile.getTrackTimeType());
+							wrapper.setIncludeDescriptions(profile.isDescriptions());
+							if (profile.getWhitelistedServices() != null) {
+								wrapper.getWhitelistedServices().addAll(profile.getWhitelistedServices());
+							}
 							tracker.add(wrapper);
+							System.out.println("\t" + single.getId());
 						}
 						serviceTracker = new MultipleServiceRuntimeTracker(tracker.toArray(new ServiceRuntimeTracker[tracker.size()]));
 					}
 				}
 				break;
 			}
-			else if (!recursive) {
+			else if (!profile.isRecursive()) {
 				break;
 			}
 			else {
@@ -143,14 +155,6 @@ public class DynamicRuntimeTracker implements ServiceRuntimeTrackerProvider {
 			}
 			return result;
 		}
-	}
-
-	public boolean isRecursive() {
-		return recursive;
-	}
-
-	public void setRecursive(boolean recursive) {
-		this.recursive = recursive;
 	}
 	
 }

@@ -1,6 +1,8 @@
 package nabu.misc.auditing;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.jws.WebParam;
 import javax.jws.WebResult;
@@ -9,6 +11,7 @@ import javax.validation.constraints.NotNull;
 
 import be.nabu.eai.module.auditing.DynamicRuntimeTracker;
 import be.nabu.eai.module.auditing.FlatServiceTrackerWrapper;
+import be.nabu.eai.module.auditing.TraceProfile;
 import be.nabu.eai.repository.EAIResourceRepository;
 import be.nabu.eai.repository.api.ModifiableServiceRuntimeTrackerProvider;
 import be.nabu.libs.artifacts.api.Artifact;
@@ -21,9 +24,15 @@ import be.nabu.libs.services.pojo.POJOUtils;
 @WebService
 public class Services {
 	
+	public enum TrackMode {
+		SERVICE,
+		ROOT_SERVICE,
+		DESCRIPTION
+	}
+	
 	private ExecutionContext executionContext;
-	private static DynamicRuntimeTracker instance;
-	private static DynamicRuntimeTracker nonRecursiveInstance;
+	
+	private static Map<String, DynamicRuntimeTracker> trackers = new HashMap<String, DynamicRuntimeTracker>();
 	
 	/**
 	 * Allows you to register a service that performs service tracking, it must implement the interface nabu.interfaces.Services.track
@@ -47,7 +56,27 @@ public class Services {
 		}
 	}
 	
-	public void auditService(@NotNull @WebParam(name = "serviceId") String serviceId, @NotNull @WebParam(name = "auditServiceId") String auditServiceId, @WebParam(name = "recursive") Boolean recursive) {
+	private DynamicRuntimeTracker getTracker(TraceProfile profile, boolean create) {
+		String key = profile.toString();
+		DynamicRuntimeTracker dynamicRuntimeTracker = trackers.get(key);
+		if (dynamicRuntimeTracker == null && create) {
+			synchronized(Services.class) {
+				dynamicRuntimeTracker = trackers.get(key);
+				if (dynamicRuntimeTracker == null) {
+					dynamicRuntimeTracker = new DynamicRuntimeTracker(profile);
+					trackers.put(key, dynamicRuntimeTracker);
+					((EAIResourceRepository) EAIResourceRepository.getInstance()).getDynamicRuntimeTrackers().add(dynamicRuntimeTracker);
+				}
+			}
+		}
+		return dynamicRuntimeTracker;
+	}
+	
+	public void auditService(@NotNull @WebParam(name = "serviceId") String serviceId, @NotNull @WebParam(name = "auditServiceId") String auditServiceId, @WebParam(name = "recursive") Boolean recursive, @WebParam(name = "traceProfile") TraceProfile profile) {
+		if (recursive != null && profile != null) {
+			throw new IllegalArgumentException("Use either recursive or the profile, not a combination of both. Recursive is deprecated");
+		}
+		
 		Artifact serviceToTrack = EAIResourceRepository.getInstance().resolve(serviceId);
 		Artifact auditService = EAIResourceRepository.getInstance().resolve(auditServiceId);
 		if (!(serviceToTrack instanceof DefinedService)
@@ -55,69 +84,30 @@ public class Services {
 				|| !POJOUtils.isImplementation((DefinedService) auditService, MethodServiceInterface.wrap(be.nabu.eai.module.auditing.api.FlatServiceTracker.class, "track"))) {
 			throw new IllegalArgumentException("Invalid input, can not track " + serviceId + " with " + auditServiceId);
 		}
-		if (recursive == null || recursive) {
-			if (instance == null) {
-				synchronized(Services.class) {
-					if (instance == null) {
-						DynamicRuntimeTracker dynamicRuntimeTracker = new DynamicRuntimeTracker();
-						dynamicRuntimeTracker.setRecursive(true);
-						// set up a new service track provider
-						((EAIResourceRepository) EAIResourceRepository.getInstance()).getDynamicRuntimeTrackers().add(dynamicRuntimeTracker);
-						instance = dynamicRuntimeTracker;
-					}
-				}
-			}
-			instance.auditService(serviceId, (DefinedService) auditService);
-		}
-		else {
-			if (nonRecursiveInstance == null) {
-				synchronized(Services.class) {
-					if (nonRecursiveInstance == null) {
-						DynamicRuntimeTracker dynamicRuntimeTracker = new DynamicRuntimeTracker();
-						dynamicRuntimeTracker.setRecursive(false);
-						// set up a new service track provider
-						((EAIResourceRepository) EAIResourceRepository.getInstance()).getDynamicRuntimeTrackers().add(dynamicRuntimeTracker);
-						nonRecursiveInstance = dynamicRuntimeTracker;
-					}
-				}
-			}
-			nonRecursiveInstance.auditService(serviceId, (DefinedService) auditService);
-		}
+		DynamicRuntimeTracker tracker = getTracker(profile == null ? TraceProfile.getDefault(recursive == null || recursive) : profile, true);
+		tracker.auditService(serviceId, (DefinedService) auditService);
 	}
 	
-	public void unauditService(@NotNull @WebParam(name = "serviceId") String serviceId, @WebParam(name = "auditServiceId") String auditServiceId, @WebParam(name = "recursive") Boolean recursive) {
-		if ((recursive == null || recursive) && instance != null) {
+	public void unauditService(@NotNull @WebParam(name = "serviceId") String serviceId, @WebParam(name = "auditServiceId") String auditServiceId, @WebParam(name = "recursive") Boolean recursive, @WebParam(name = "traceProfile") TraceProfile profile) {
+		DynamicRuntimeTracker tracker = getTracker(profile == null ? TraceProfile.getDefault(recursive == null || recursive) : profile, false);
+		
+		if (tracker != null) {
 			if (auditServiceId == null) {
-				instance.unauditService(serviceId);
+				tracker.unauditService(serviceId);
 			}
 			else {
-				instance.unauditService(serviceId, (DefinedService) EAIResourceRepository.getInstance().resolve(auditServiceId));
-			}
-		}
-		else if (recursive != null && !recursive && nonRecursiveInstance != null) {
-			if (auditServiceId == null) {
-				nonRecursiveInstance.unauditService(serviceId);
-			}
-			else {
-				nonRecursiveInstance.unauditService(serviceId, (DefinedService) EAIResourceRepository.getInstance().resolve(auditServiceId));
+				tracker.unauditService(serviceId, (DefinedService) EAIResourceRepository.getInstance().resolve(auditServiceId));
 			}
 		}
 	}
 	
 	@WebResult(name = "auditedServices")
 	// list the services that are currently being audited
-	public List<String> listAudited(@WebParam(name = "auditServiceId") String auditServiceId, @WebParam(name = "recursive") Boolean recursive) {
-		if (recursive == null || recursive) {
-			if (instance == null) {
-				return null;
-			}
-			return instance.getAudited(auditServiceId);
+	public List<String> listAudited(@WebParam(name = "auditServiceId") String auditServiceId, @WebParam(name = "recursive") Boolean recursive, @WebParam(name = "traceProfile") TraceProfile profile) {
+		DynamicRuntimeTracker tracker = getTracker(profile == null ? TraceProfile.getDefault(recursive == null || recursive) : profile, false);
+		if (tracker != null) {
+			return tracker.getAudited(auditServiceId);
 		}
-		else {
-			if (nonRecursiveInstance == null) {
-				return null;
-			}
-			return nonRecursiveInstance.getAudited(auditServiceId);
-		}
+		return null;
 	}
 }

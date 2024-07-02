@@ -1,6 +1,7 @@
 package be.nabu.eai.module.auditing;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -40,7 +41,13 @@ public class DynamicRuntimeTracker implements ServiceRuntimeTrackerProvider {
 		String key = "dynamic-audit-" + profile.toString();
 		// if we already have a tracker, we don't want to register a new one because this would mess up run ids etc
 		// this is meant for long term auditing, so if you add an auditer _while_ the target is already running, too bad, you are missing that run
-		MultipleServiceRuntimeTracker currentTracker = (MultipleServiceRuntimeTracker) runtime.getContext().get(key);
+		// each tracker instance (e.g. logger, process, cdm,...) has one instance per service run. it can be enabled on multiple service if needed
+		Map<String, FlatServiceTrackerWrapper> trackerMap = (Map<String, FlatServiceTrackerWrapper>) runtime.getContext().get(key);
+		if (trackerMap == null) {
+			trackerMap = new HashMap<String, FlatServiceTrackerWrapper>();
+			runtime.getContext().put(key, trackerMap);
+		}
+
 		boolean shouldTrack = false;
 		
 		while (runtimeToCheck != null) {
@@ -58,12 +65,11 @@ public class DynamicRuntimeTracker implements ServiceRuntimeTrackerProvider {
 				List<DefinedService> list = trackers.get(serviceId);
 				if (list != null && !list.isEmpty()) {
 					shouldTrack = true;
-					System.out.println("----------- Tracking " + serviceId + " with -> ");
-					// only go through the trouble of constructing an actual tracker if we don't have one yet
-					if (currentTracker == null) {
-						List<ServiceRuntimeTracker> tracker = new ArrayList<ServiceRuntimeTracker>();
-						for (DefinedService single : list) {
-							FlatServiceTrackerWrapper wrapper = new FlatServiceTrackerWrapper(single, runtime.getExecutionContext());
+					List<ServiceRuntimeTracker> tracker = new ArrayList<ServiceRuntimeTracker>();
+					for (DefinedService single : list) {
+						FlatServiceTrackerWrapper wrapper = trackerMap.get(single.getId());
+						if (wrapper == null) {
+							wrapper = new FlatServiceTrackerWrapper(single, runtime.getExecutionContext());
 							wrapper.setIncludeServices(profile.isServices());
 							wrapper.setIncludeSteps(profile.isSteps());
 							wrapper.setIncludeReports(profile.isReports());
@@ -73,11 +79,11 @@ public class DynamicRuntimeTracker implements ServiceRuntimeTrackerProvider {
 							if (profile.getWhitelistedServices() != null) {
 								wrapper.getWhitelistedServices().addAll(profile.getWhitelistedServices());
 							}
-							tracker.add(wrapper);
-							System.out.println("\t" + single.getId());
+							trackerMap.put(single.getId(), wrapper);
 						}
-						serviceTracker = new MultipleServiceRuntimeTracker(tracker.toArray(new ServiceRuntimeTracker[tracker.size()]));
+						tracker.add(wrapper);
 					}
+					serviceTracker = new MultipleServiceRuntimeTracker(tracker.toArray(new ServiceRuntimeTracker[tracker.size()]));
 				}
 				break;
 			}
@@ -89,13 +95,7 @@ public class DynamicRuntimeTracker implements ServiceRuntimeTrackerProvider {
 			}
 		}
 		if (shouldTrack) {
-			if (currentTracker == null) {
-				runtime.getContext().put(key, serviceTracker);
-				return serviceTracker;
-			}
-			else {
-				return currentTracker;
-			}
+			return serviceTracker;
 		}
 		return null;
 	}

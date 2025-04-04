@@ -54,6 +54,7 @@ public class Services {
 	/**
 	 * Allows you to register a service that performs service tracking, it must implement the interface nabu.interfaces.Services.track
 	 */
+	@Deprecated
 	public void registerServiceTracker(@WebParam(name = "serviceId") String serviceId, @WebParam(name = "recursive") Boolean recursive, @WebParam(name = "includeServices") Boolean includeServices, @WebParam(name = "includeSteps") Boolean includeSteps, @WebParam(name = "includeReports") Boolean includeReports, @WebParam(name = "includeDescriptions") Boolean includeDescriptions) {
 		DefinedService resolved = executionContext.getServiceContext().getResolver(DefinedService.class).resolve(serviceId);
 		if (executionContext.getServiceContext().getServiceTrackerProvider() instanceof ModifiableServiceRuntimeTrackerProvider) {
